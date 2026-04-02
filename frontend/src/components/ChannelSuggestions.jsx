@@ -24,6 +24,7 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
+        const BASE = import.meta.env.VITE_API_URL || "";
         const res  = await fetch(`/api/search-channels/?q=${encodeURIComponent(query.trim())}`);
         const data = await res.json();
         setResults(data.results || []);
