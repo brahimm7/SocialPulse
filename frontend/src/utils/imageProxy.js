@@ -24,7 +24,8 @@ export function proxyImage(url) {
       parsed.hostname.endsWith(d)
     );
     if (isYouTubeCDN) {
-      return `/api/image-proxy/?url=${encodeURIComponent(url)}`;
+      const BASE = import.meta.env.VITE_API_URL || "";
+      return `${import.meta.env.VITE_API_URL || ""}/api/image-proxy/?url=${encodeURIComponent(url)}`;
     }
   } catch {
     // Not a valid URL — return as-is
