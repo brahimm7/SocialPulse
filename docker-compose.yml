@@ -1,0 +1,74 @@
+# docker-compose.yml
+# Orchestrates 3 services:
+#   backend  → Django + Gunicorn (port 8000 internal only)
+#   frontend → React built by Vite, served by nginx (port 80 → host 3000)
+#   db       → PostgreSQL 16 (only when using --profile local)
+#
+# ── Supabase usage (your current setup) ──────────────────────────────────────
+#   1. Make sure backend/.env has:  DATABASE_URL=postgresql://...supabase...
+#   2. docker compose up --build
+#   3. Open http://localhost:3000
+#
+# ── Local PostgreSQL usage ────────────────────────────────────────────────────
+#   1. Leave DATABASE_URL blank in backend/.env  (or remove it)
+#   2. docker compose --profile local up --build
+
+services:
+
+  # ── Local PostgreSQL (only with --profile local) ──────────────────────────
+  db:
+    image: postgres:16-alpine
+    profiles: ["local"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       socialpulse
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Django backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DEBUG: "False"
+      # DATABASE_URL is read exclusively from backend/.env
+      # Do NOT set a default here — it would override your Supabase URL
+      # For --profile local, settings.py falls back to SQLite automatically
+      # if DATABASE_URL is blank, OR you can add this line to .env:
+      # DATABASE_URL=postgresql://postgres:postgres@db:5432/socialpulse
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')\""]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 30s
+
+  # ── React frontend (nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
