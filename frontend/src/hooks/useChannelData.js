@@ -13,6 +13,7 @@ export function useChannelData() {
     setData(null);
 
     try {
+      const BASE = import.meta.env.VITE_API_URL || "";
       const res = await axios.get("/api/channel/", {
         params: { url, max_videos: maxVideos },
       });
