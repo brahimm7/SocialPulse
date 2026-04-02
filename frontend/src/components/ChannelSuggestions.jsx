@@ -1,13 +1,12 @@
 // src/components/ChannelSuggestions.jsx
-// Fix: use onMouseDown instead of onClick so it fires BEFORE input's onBlur,
-// preventing the dropdown from closing before the selection registers.
-
 import { useState, useEffect, useRef } from "react";
 import { Tv } from "lucide-react";
+import { proxyImage } from "../utils/imageProxy";
 import { useLanguage } from "../hooks/useLanguage";
 import { t } from "../utils/i18n";
 
 const DEBOUNCE_MS = 600;
+const BASE = import.meta.env.VITE_API_URL || "";
 
 export default function ChannelSuggestions({ query, onSelect, visible }) {
   const [results, setResults] = useState([]);
@@ -24,8 +23,7 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const BASE = import.meta.env.VITE_API_URL || "";
-        const res = await fetch(`${BASE}/api/search-channels/?q=${encodeURIComponent(query.trim())}`);
+        const res  = await fetch(`${BASE}/api/search-channels/?q=${encodeURIComponent(query.trim())}`);
         const data = await res.json();
         setResults(data.results || []);
       } catch {
@@ -59,9 +57,7 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
           {results.map((ch) => (
             <button
               key={ch.channel_id}
-              // ✅ FIX: onMouseDown fires before onBlur, so the input value
-              // is set before the dropdown closes. onClick fires after onBlur
-              // which caused the dropdown to close first and discard the pick.
+
               onMouseDown={(e) => {
                 e.preventDefault(); // prevent input losing focus prematurely
                 onSelect(ch.title, `@${ch.title}`.replace(/\s+/g, ""), ch.channel_id, ch);
@@ -69,7 +65,7 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-navy-700 transition-colors text-left"
             >
               {ch.thumbnail ? (
-                <img src={ch.thumbnail} alt={ch.title} className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-navy-600"/>
+                <img src={proxyImage(ch.thumbnail)} alt={ch.title} className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-navy-600"/>
               ) : (
                 <div className="w-9 h-9 rounded-full bg-navy-600 flex items-center justify-center flex-shrink-0">
                   <Tv size={14} className="text-slate-400"/>
