@@ -24,7 +24,9 @@ export default function SearchBar({ onSearch, loading }) {
 
   function handleSubmit(e) {
     e.preventDefault();
-    const query = url.trim();
+    // Use url (the actual search value) — fall back to shownValue if url is empty
+    // after a suggestion was selected (displayName is set but url may lag)
+    const query = (url || displayName).trim();
     if (query) { setShowSug(false); onSearch(query, maxVideos); }
   }
 
@@ -70,7 +72,7 @@ export default function SearchBar({ onSearch, loading }) {
             )}
             <ChannelSuggestions query={url} onSelect={handleSelect} visible={showSug && !loading}/>
           </div>
-          <button type="submit" disabled={loading || !url.trim()}
+          <button type="submit" disabled={loading || !shownValue.trim()}
             className="btn-primary h-12 px-7 disabled:opacity-50 disabled:cursor-not-allowed">
             {loading
               ? <span className="flex items-center gap-2"><Spinner/>{t(lang, "fetching")}</span>
