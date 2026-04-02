@@ -1,8 +1,4 @@
 // src/utils/imageProxy.js
-// Routes YouTube CDN images through the Django image-proxy endpoint.
-// This bypasses CORS restrictions on yt3.ggpht.com / i.ytimg.com
-// that cause broken images when loading from localhost or a custom domain.
-
 const YOUTUBE_CDN_DOMAINS = [
   "yt3.ggpht.com",
   "i.ytimg.com",
@@ -10,12 +6,8 @@ const YOUTUBE_CDN_DOMAINS = [
   "lh3.googleusercontent.com",
 ];
 
-/**
- * Returns a proxied URL for YouTube CDN images, or the original URL
- * if it's already a safe/local path.
- * @param {string} url  Original image URL from YouTube API
- * @returns {string}    Proxied URL via /api/image-proxy/
- */
+const BASE = import.meta.env.VITE_API_URL || "";
+
 export function proxyImage(url) {
   if (!url) return "";
   try {
@@ -24,7 +16,6 @@ export function proxyImage(url) {
       parsed.hostname.endsWith(d)
     );
     if (isYouTubeCDN) {
-      const BASE = import.meta.env.VITE_API_URL || "";
       return `${BASE}/api/image-proxy/?url=${encodeURIComponent(url)}`;
     }
   } catch {
