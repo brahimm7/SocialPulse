@@ -2,6 +2,8 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 
+const BASE = import.meta.env.VITE_API_URL || "";
+
 export function useChannelData() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,8 +15,7 @@ export function useChannelData() {
     setData(null);
 
     try {
-      const BASE = import.meta.env.VITE_API_URL || "";
-      const res = await axios.get(`${BASE}/api/channel/`,  {
+      const res = await axios.get(`${BASE}/api/channel/`, {
         params: { url, max_videos: maxVideos },
       });
       setData(res.data);
