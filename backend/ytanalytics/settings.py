@@ -17,7 +17,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
 DEBUG      = os.environ.get("DEBUG", "True") == "True"
-ALLOWED_HOSTS = ["*"]
+
+# In production set this to your actual domains, e.g.:
+# ALLOWED_HOSTS=socialpulse-backend.up.railway.app
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+
+# CORS — allow any origin (Vercel frontend → Railway backend)
+# Restrict this to your Vercel domain in production if needed:
+# CORS_ALLOWED_ORIGINS = ["https://social-pulse-self.vercel.app"]
+CORS_ALLOW_ALL_ORIGINS = True
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -77,9 +85,6 @@ else:
         }
 
 STATIC_URL = "/static/"
-
-# CORS
-CORS_ALLOW_ALL_ORIGINS = True
 
 # REST Framework
 REST_FRAMEWORK = {
