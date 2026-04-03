@@ -22,10 +22,12 @@ export function useChannelData() {
       });
       setData(res.data);
     } catch (err) {
-      const msg =
-        err.response?.data?.error ||
-        err.message ||
-        "An unexpected error occurred.";
+      // Always extract a plain string — never pass an object to setError
+      // because React will crash trying to render {code, message} as JSX
+      const raw = err.response?.data?.error || err.response?.data || err.message;
+      const msg = typeof raw === "string"
+        ? raw
+        : (raw?.message || raw?.detail || JSON.stringify(raw) || "An unexpected error occurred.");
       setError(msg);
     } finally {
       setLoading(false);
