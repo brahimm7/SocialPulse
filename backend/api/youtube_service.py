@@ -55,19 +55,63 @@ def _fmt_duration(sec: int) -> str:
 # ── Step 1: resolve channel URL → channel_id ─────────────────────────────────
 
 def resolve_channel_id(query: str) -> str:
+    """
+    Accepts any of:
+      - UC... channel ID directly
+      - Full URL with /channel/UC...
+      - @handle or URL with @handle
+      - Plain channel name (falls back to search API)
+
+    Strategy order (cheapest first):
+      1. Already a channel ID → return immediately (0 units)
+      2. Extract UC... from URL → return immediately (0 units)
+      3. Try forHandle lookup → 1 unit
+      4. Fall back to search.list → 100 units (plain names like "MrBeast")
+    """
     query = query.strip().rstrip("/")
+
+    # Already a channel ID
     if re.match(r"^UC[\w-]{21,}$", query):
         return query
+
+    # Extract channel ID from URL
     m = re.search(r"/channel/(UC[\w-]{21,})", query)
     if m:
         return m.group(1)
+
+    # Extract handle from URL or bare @handle
     handle_match = re.search(r"@([\w.-]+)", query)
-    handle = handle_match.group(1) if handle_match else query.lstrip("@")
-    data  = _get("channels", {"part": "id", "forHandle": handle, "maxResults": 1})
+
+    if handle_match:
+        handle = handle_match.group(1)
+        data   = _get("channels", {"part": "id", "forHandle": handle, "maxResults": 1})
+        items  = data.get("items", [])
+        if items:
+            return items[0]["id"]
+        raise ValueError(f"Could not find channel '@{handle}'.")
+
+    # No @ — try as a handle anyway (without @)
+    clean = query.lstrip("@")
+    data  = _get("channels", {"part": "id", "forHandle": clean, "maxResults": 1})
     items = data.get("items", [])
-    if not items:
-        raise ValueError(f"Could not find channel '@{handle}'. Check the URL or handle.")
-    return items[0]["id"]
+    if items:
+        return items[0]["id"]
+
+    # Last resort: search by name (costs 100 units but works for any name)
+    data  = _get("search", {
+        "part":       "snippet",
+        "q":          clean,
+        "type":       "channel",
+        "maxResults": 1,
+    })
+    items = data.get("items", [])
+    if items:
+        return items[0]["id"]["channelId"]
+
+    raise ValueError(
+        f"Could not find channel '{query}'. "
+        "Try using the @ handle (e.g. @MrBeast) or the channel URL."
+    )
 
 
 # ── Step 2: fetch channel info from YouTube ───────────────────────────────────

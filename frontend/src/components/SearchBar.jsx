@@ -32,8 +32,8 @@ export default function SearchBar({ onSearch, loading }) {
     }
   }
 
-  function handleSelect(title, handle, channelId, obj) {
-    const searchUrl = obj.custom_url || handle || channelId;
+  function handleSelect(title, searchUrl, channelId, obj) {
+    // searchUrl is the channel_id (UCxxxx) — always resolves correctly
     setDisplayName(title);
     setUrl(searchUrl);
     setShowSug(false);
