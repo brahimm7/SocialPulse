@@ -14,36 +14,37 @@ const OPTIONS = [
 ];
 
 export default function SearchBar({ onSearch, loading }) {
-  const [url, setUrl]             = useState("");
-  const [displayName, setDisplayName] = useState(""); // human-readable label shown in input
-  const [maxVideos, setMaxVideos] = useState(50);
-  const [showSug, setShowSug]     = useState(false);
-  const { lang }                  = useLanguage();
+  const [url, setUrl]               = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [maxVideos, setMaxVideos]   = useState(50);
+  const [showSug, setShowSug]       = useState(false);
+  const { lang }                    = useLanguage();
 
   const selectedOpt = OPTIONS.find((o) => o.value === maxVideos) || OPTIONS[1];
+  const shownValue  = displayName || url;
 
   function handleSubmit(e) {
     e.preventDefault();
-    // Use url (the actual search value) — fall back to shownValue if url is empty
-    // after a suggestion was selected (displayName is set but url may lag)
     const query = (url || displayName).trim();
-    if (query) { setShowSug(false); onSearch(query, maxVideos); }
+    if (query) {
+      setShowSug(false);
+      onSearch(query, maxVideos);
+    }
   }
 
-  // Called by ChannelSuggestions with title, @handle, channel_id, full obj
   function handleSelect(title, handle, channelId, obj) {
     const searchUrl = obj.custom_url || handle || channelId;
-    setDisplayName(title);   // show human name in box
-    setUrl(searchUrl);       // use handle/ID for actual fetch
+    setDisplayName(title);
+    setUrl(searchUrl);
     setShowSug(false);
     onSearch(searchUrl, maxVideos);
   }
 
   function handleClear() {
-    setUrl(""); setDisplayName(""); setShowSug(false);
+    setUrl("");
+    setDisplayName("");
+    setShowSug(false);
   }
-
-  const shownValue = displayName || url;
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -55,7 +56,7 @@ export default function SearchBar({ onSearch, loading }) {
               type="text"
               value={shownValue}
               onChange={(e) => {
-                setDisplayName("");   // clear display name — user is typing raw
+                setDisplayName("");
                 setUrl(e.target.value);
                 setShowSug(true);
               }}
@@ -72,8 +73,11 @@ export default function SearchBar({ onSearch, loading }) {
             )}
             <ChannelSuggestions query={url} onSelect={handleSelect} visible={showSug && !loading}/>
           </div>
-          <button type="submit" disabled={loading || !shownValue.trim()}
-            className="btn-primary h-12 px-7 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button
+            type="submit"
+            disabled={loading || !shownValue.trim()}
+            className="btn-primary h-12 px-7 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading
               ? <span className="flex items-center gap-2"><Spinner/>{t(lang, "fetching")}</span>
               : t(lang, "goBtn")}
@@ -84,10 +88,12 @@ export default function SearchBar({ onSearch, loading }) {
           <span>{t(lang, "videosToFetch")}</span>
           {OPTIONS.map((opt) => (
             <button key={opt.value} type="button" onClick={() => setMaxVideos(opt.value)}
-              className={`px-3 py-1 rounded-md border text-xs font-medium transition-colors flex items-center gap-1
-                ${maxVideos === opt.value
+              className={[
+                "px-3 py-1 rounded-md border text-xs font-medium transition-colors flex items-center gap-1",
+                maxVideos === opt.value
                   ? opt.warn ? "bg-amber-500 border-amber-500 text-white" : "bg-accent-blue border-accent-blue text-white"
-                  : opt.warn ? "border-amber-700/50 text-amber-500/70 hover:border-amber-500" : "border-navy-600 text-slate-400 hover:border-slate-500"}`}>
+                  : opt.warn ? "border-amber-700/50 text-amber-500/70 hover:border-amber-500" : "border-navy-600 text-slate-400 hover:border-slate-500"
+              ].join(" ")}>
               {opt.warn && <AlertTriangle size={10}/>}
               {opt.warn ? t(lang, "allVideos") : opt.label}
             </button>

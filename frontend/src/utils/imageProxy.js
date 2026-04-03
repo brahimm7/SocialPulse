@@ -16,10 +16,10 @@ export function proxyImage(url) {
       parsed.hostname.endsWith(d)
     );
     if (isYouTubeCDN) {
-      return `${BASE}/api/image-proxy/?url=${encodeURIComponent(url)}`;
+      return BASE + "/api/image-proxy/?url=" + encodeURIComponent(url);
     }
   } catch {
-    // Not a valid URL — return as-is
+    // Not a valid absolute URL — return as-is
   }
   return url;
 }

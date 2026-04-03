@@ -23,7 +23,7 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res  = await fetch(`${BASE}/api/search-channels/?q=${encodeURIComponent(query.trim())}`);
+        const res  = await fetch(BASE + "/api/search-channels/?q=" + encodeURIComponent(query.trim()));
         const data = await res.json();
         setResults(data.results || []);
       } catch {
@@ -57,10 +57,9 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
           {results.map((ch) => (
             <button
               key={ch.channel_id}
-
               onMouseDown={(e) => {
-                e.preventDefault(); // prevent input losing focus prematurely
-                onSelect(ch.title, `@${ch.title}`.replace(/\s+/g, ""), ch.channel_id, ch);
+                e.preventDefault();
+                onSelect(ch.title, "@" + ch.title.replace(/\s+/g, ""), ch.channel_id, ch);
               }}
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-navy-700 transition-colors text-left"
             >

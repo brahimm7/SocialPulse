@@ -98,10 +98,33 @@ def fetch_channel_info(channel_id: str) -> dict:
     }
 
 
-# ── Step 3: get uploads playlist ID ──────────────────────────────────────────
+# ── Step 3: get uploads playlist ID from API ─────────────────────────────────
 
 def get_uploads_playlist_id(channel_id: str) -> str:
-    return "UU" + channel_id[2:]
+    """
+    Fetch the real uploads playlist ID from YouTube's contentDetails.
+    The old 'UC → UU' string trick fails for some channels.
+    This costs 1 API unit and is the only reliable method.
+    """
+    data = _get("channels", {
+        "part": "contentDetails",
+        "id":   channel_id,
+    })
+    items = data.get("items", [])
+    if not items:
+        raise ValueError(f"Could not get content details for channel: {channel_id}")
+    playlist_id = (
+        items[0]
+        .get("contentDetails", {})
+        .get("relatedPlaylists", {})
+        .get("uploads", "")
+    )
+    if not playlist_id:
+        raise ValueError(
+            f"Channel '{channel_id}' has no public uploads playlist. "
+            "It may be a brand account or have uploads disabled."
+        )
+    return playlist_id
 
 
 # ── Step 4: collect video IDs ─────────────────────────────────────────────────

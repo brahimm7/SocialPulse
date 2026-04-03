@@ -2,6 +2,8 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 
+// Empty string = relative path (works locally via Vite proxy / Docker nginx)
+// Set VITE_API_URL on Vercel to point to your Railway backend URL
 const BASE = import.meta.env.VITE_API_URL || "";
 
 export function useChannelData() {
@@ -15,7 +17,7 @@ export function useChannelData() {
     setData(null);
 
     try {
-      const res = await axios.get(`${BASE}/api/channel/`, {
+      const res = await axios.get(BASE + "/api/channel/", {
         params: { url, max_videos: maxVideos },
       });
       setData(res.data);
