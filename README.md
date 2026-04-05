@@ -156,10 +156,3 @@ UCX6OQ3DkcsbYNE6H8uQQuVA
 - **Engagement velocity** scatter plot (views/day vs upload date)
 - **Full video table** with search, sort, and pagination
 
----
-
-## Production Notes
-
-- Replace `django.core.cache.backends.locmem` with Redis for multi-worker deployments
-- Restrict the API key in Google Console to your server's IP for security
-- Set `DEBUG=False` and a real `DJANGO_SECRET_KEY` in production
