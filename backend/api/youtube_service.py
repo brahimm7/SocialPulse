@@ -70,12 +70,12 @@ def resolve_channel_id(query: str) -> str:
     """
     query = query.strip().rstrip("/")
 
-    # Already a channel ID
-    if re.match(r"^UC[\w-]{21,}$", query):
+    # Already a channel ID (UC followed by 20-24 alphanumeric/dash/underscore chars)
+    if re.match(r"^UC[\w-]{20,24}$", query):
         return query
 
-    # Extract channel ID from URL
-    m = re.search(r"/channel/(UC[\w-]{21,})", query)
+    # Extract channel ID from URL — also handle shorter IDs
+    m = re.search(r"/channel/(UC[\w-]{20,24})", query)
     if m:
         return m.group(1)
 

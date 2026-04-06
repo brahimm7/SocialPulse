@@ -59,10 +59,8 @@ export default function ChannelSuggestions({ query, onSelect, visible }) {
               key={ch.channel_id}
               onMouseDown={(e) => {
                 e.preventDefault();
-                // Use channel_id (UCxxxx) directly — always resolves correctly.
-                // Never construct a handle from the title — it can be wrong.
-                const searchUrl = ch.search_url || ch.channel_id;
-                onSelect(ch.title, searchUrl, ch.channel_id, ch);
+                // Always pass the UC... channel_id — it never fails resolution
+                onSelect(ch.title, ch.channel_id, ch.channel_id, ch);
               }}
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-navy-700 transition-colors text-left"
             >
