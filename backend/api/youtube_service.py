@@ -174,34 +174,75 @@ def get_uploads_playlist_id(channel_id: str) -> str:
 # ── Step 4: collect video IDs ─────────────────────────────────────────────────
 
 def fetch_video_ids(playlist_id: str, max_videos: int = 50) -> list:
+    """
+    Collect video IDs from the uploads playlist in newest-first order.
+    max_videos=0 means fetch everything.
+    Always uses maxResults=50 per page (YouTube's maximum) for efficiency,
+    then trims to the requested count at the end.
+    """
     fetch_all = (max_videos == 0)
     ids, next_page = [], None
+
     while True:
-        page_size = 50 if fetch_all else min(50, max_videos - len(ids))
-        if not fetch_all and page_size <= 0:
-            break
-        params = {"part": "contentDetails", "playlistId": playlist_id, "maxResults": page_size}
+        params = {
+            "part":       "contentDetails",
+            "playlistId": playlist_id,
+            "maxResults": 50,   # always request max — trim later
+        }
         if next_page:
             params["pageToken"] = next_page
-        data = _get("playlistItems", params)
+
+        try:
+            data = _get("playlistItems", params)
+        except Exception:
+            break   # partial result is better than crash
+
         for item in data.get("items", []):
             vid_id = item["contentDetails"].get("videoId")
             if vid_id:
                 ids.append(vid_id)
+
         next_page = data.get("nextPageToken")
+
+        # Stop if no more pages
         if not next_page:
             break
+
+        # Stop if we have enough (only when not fetching all)
+        if not fetch_all and len(ids) >= max_videos:
+            break
+
+    # Trim to exact requested count
+    if not fetch_all and len(ids) > max_videos:
+        ids = ids[:max_videos]
+
     return ids
 
 
-# ── Step 5: batch-fetch video details ────────────────────────────────────────
+# ── Step 5: batch-fetch video details (order-preserving) ─────────────────────
 
 def fetch_videos_details(video_ids: list) -> list:
-    videos = []
+    """
+    Fetch full metadata for video IDs in batches of 50.
+    Preserves the input order (newest-first from playlist).
+    YouTube's videos.list does NOT preserve order, so we re-sort
+    using the original ID list after fetching.
+    """
+    # Build a lookup dict: video_id → metadata
+    lookup = {}
     today  = datetime.date.today()
+
     for i in range(0, len(video_ids), 50):
         batch = video_ids[i: i + 50]
-        data  = _get("videos", {"part": "snippet,statistics,contentDetails", "id": ",".join(batch), "maxResults": 50})
+        try:
+            data = _get("videos", {
+                "part":       "snippet,statistics,contentDetails",
+                "id":         ",".join(batch),
+                "maxResults": 50,
+            })
+        except Exception:
+            continue  # skip failed batch, don't crash
+
         for item in data.get("items", []):
             snippet  = item.get("snippet", {})
             stats    = item.get("statistics", {})
@@ -210,9 +251,12 @@ def fetch_videos_details(video_ids: list) -> list:
             pub_date = None
             if pub_raw:
                 try:
-                    pub_date = datetime.datetime.fromisoformat(pub_raw.replace("Z", "+00:00")).date()
+                    pub_date = datetime.datetime.fromisoformat(
+                        pub_raw.replace("Z", "+00:00")
+                    ).date()
                 except Exception:
                     pass
+
             duration_sec  = _parse_iso8601_duration(content.get("duration", ""))
             view_count    = int(stats.get("viewCount",    0))
             like_count    = int(stats.get("likeCount",    0))
@@ -221,7 +265,8 @@ def fetch_videos_details(video_ids: list) -> list:
             video_type = ("Short" if duration_sec <= 60
                           else "Medium" if duration_sec <= 600
                           else "Long-form")
-            videos.append({
+
+            lookup[item["id"]] = {
                 "id":             item["id"],
                 "title":          snippet.get("title", ""),
                 "published_at":   pub_raw,
@@ -236,8 +281,11 @@ def fetch_videos_details(video_ids: list) -> list:
                 "views_per_day":  round(view_count / days, 1),
                 "days_since_upload": days,
                 "watch_url":      f"https://www.youtube.com/watch?v={item['id']}",
-            })
-    return videos
+            }
+
+    # Return in the original playlist order (newest-first)
+    # Skip any IDs that failed to fetch details
+    return [lookup[vid_id] for vid_id in video_ids if vid_id in lookup]
 
 
 # ── DB cache helpers ──────────────────────────────────────────────────────────
